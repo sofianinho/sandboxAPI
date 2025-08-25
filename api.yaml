@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: 5G Network Sandbox API
+  description: |
+    Simulated 5G network environment for testing intelligent agent capabilities.
+    This API provides basic network operations that an AI agent must orchestrate
+    to fulfill high-level user commands.
+  version: 1.0.0
+  contact:
+    name: LabLabee Engineering Team
+    email: engineering@lablabee.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local sandbox environment
+  - url: https://sandbox.5gnetwork.test/api/v1
+    description: Remote sandbox environment
+
+paths:
+  /network/start:
+    post:
+      summary: Start 5G Network Service
+      description: |
+        Initiates the 5G network service. The network will transition through
+        states: offline → initializing → online. This operation is idempotent.
+      operationId: startNetwork
+      tags:
+        - Network Control
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                config:
+                  type: object
+                  properties:
+                    max_devices:
+                      type: integer
+                      default: 100
+                      minimum: 1
+                      maximum: 1000
+                    target_bandwidth:
+                      type: integer
+                      default: 1000
+                      description: Target bandwidth in Mbps
+                    optimization_mode:
+                      type: string
+                      enum: [performance, balanced, power_saving]
+                      default: balanced
+      responses:
+        '200':
+          description: Network started successfully or already running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkOperationResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "5G network service started successfully"
+                    operation_id: "op_1234567890"
+                    timestamp: "2024-01-15T10:30:00Z"
+                    network_state:
+                      status: "initializing"
+                      uptime_seconds: 0
+        '503':
+          description: Service temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /network/stop:
+    post:
+      summary: Stop 5G Network Service
+      description: |
+        Gracefully shuts down the 5G network service. Will disconnect all
+        connected devices before stopping.
+      operationId: stopNetwork
+      tags:
+        - Network Control
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  default: false
+                  description: Force stop without graceful disconnect
+                timeout_seconds:
+                  type: integer
+                  default: 30
+                  minimum: 0
+                  maximum: 300
+      responses:
+        '200':
+          description: Network stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkOperationResponse'
+        '409':
+          description: Conflict - devices still connected (when not forced)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /network/status:
+    get:
+      summary: Get Network Status
+      description: |
+        Returns comprehensive status information about the 5G network including
+        health metrics, connected devices, and performance indicators.
+      operationId: getNetworkStatus
+      tags:
+        - Network Monitoring
+      responses:
+        '200':
+          description: Current network status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkStatus'
+              examples:
+                online:
+                  value:
+                    status: "online"
+                    uptime_seconds: 3600
+                    metrics:
+                      signal_strength: 95
+                      bandwidth_utilization: 45
+                      latency_ms: 12
+                      packet_loss_rate: 0.01
+                    connected_devices: 5
+                    device_list:
+                      - device_id: "device_001"
+                        connection_quality: "excellent"
+                        connected_at: "2024-01-15T09:00:00Z"
+                    error_count: 0
+                    errors: []
+                    health_score: 98
+                degraded:
+                  value:
+                    status: "degraded"
+                    uptime_seconds: 7200
+                    metrics:
+                      signal_strength: 65
+                      bandwidth_utilization: 85
+                      latency_ms: 45
+                      packet_loss_rate: 0.05
+                    connected_devices: 12
+                    error_count: 3
+                    errors:
+                      - code: "BANDWIDTH_WARNING"
+                        message: "Bandwidth utilization above 80%"
+                        severity: "warning"
+                        timestamp: "2024-01-15T10:25:00Z"
+                    health_score: 72
+
+  /device/connect:
+    post:
+      summary: Connect Device to Network
+      description: |
+        Attempts to connect a device to the 5G network. Connection may fail
+        if network is offline, at capacity, or device is unauthorized.
+      operationId: connectDevice
+      tags:
+        - Device Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - device_id
+              properties:
+                device_id:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_-]+$'
+                  minLength: 1
+                  maxLength: 50
+                  description: Unique identifier for the device
+                device_type:
+                  type: string
+                  enum: [phone, tablet, iot, laptop, other]
+                  default: phone
+                priority:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                  description: Connection priority (10 = highest)
+                auth_token:
+                  type: string
+                  description: Optional authentication token
+      responses:
+        '200':
+          description: Device connected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceOperationResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Device device_001 connected successfully"
+                    device_id: "device_001"
+                    connection_details:
+                      ip_address: "10.0.1.15"
+                      signal_strength: 92
+                      assigned_bandwidth_mbps: 100
+                      connection_quality: "excellent"
+        '400':
+          description: Bad request - invalid device ID or parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - device not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - device already connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service unavailable - network offline or at capacity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /device/disconnect:
+    post:
+      summary: Disconnect Device from Network
+      description: Disconnects a device from the 5G network.
+      operationId: disconnectDevice
+      tags:
+        - Device Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - device_id
+              properties:
+                device_id:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_-]+$'
+                  minLength: 1
+                  maxLength: 50
+                reason:
+                  type: string
+                  enum: [user_requested, admin_action, maintenance, violation]
+                  default: user_requested
+      responses:
+        '200':
+          description: Device disconnected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceOperationResponse'
+        '404':
+          description: Device not found or not connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  
+  /logs:
+    get:
+      summary: Retrieve System Logs
+      description: Get recent system logs and events
+      operationId: getLogs
+      tags:
+        - Network Monitoring
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [debug, info, warning, error, critical]
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: ISO 8601 timestamp
+      responses:
+        '200':
+          description: System logs retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogsResponse'
+
+components:
+  schemas:
+    NetworkOperationResponse:
+      type: object
+      required:
+        - success
+        - message
+        - operation_id
+        - timestamp
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        operation_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        network_state:
+          type: object
+          properties:
+            status:
+              $ref: '#/components/schemas/NetworkStatusEnum'
+            uptime_seconds:
+              type: integer
+              minimum: 0
+
+    DeviceOperationResponse:
+      type: object
+      required:
+        - success
+        - message
+        - device_id
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        device_id:
+          type: string
+        connection_details:
+          type: object
+          properties:
+            ip_address:
+              type: string
+              format: ipv4
+            signal_strength:
+              type: integer
+              minimum: 0
+              maximum: 100
+            assigned_bandwidth_mbps:
+              type: integer
+              minimum: 0
+            connection_quality:
+              type: string
+              enum: [excellent, good, fair, poor]
+
+    NetworkStatus:
+      type: object
+      required:
+        - status
+        - uptime_seconds
+        - connected_devices
+        - metrics
+      properties:
+        status:
+          $ref: '#/components/schemas/NetworkStatusEnum'
+        uptime_seconds:
+          type: integer
+          minimum: 0
+        connected_devices:
+          type: integer
+          minimum: 0
+        device_list:
+          type: array
+          items:
+            type: object
+            properties:
+              device_id:
+                type: string
+              device_type:
+                type: string
+              connection_quality:
+                type: string
+                enum: [excellent, good, fair, poor]
+              connected_at:
+                type: string
+                format: date-time
+              signal_strength:
+                type: integer
+                minimum: 0
+                maximum: 100
+        metrics:
+          type: object
+          properties:
+            signal_strength:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: Average signal strength percentage
+            bandwidth_utilization:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: Bandwidth utilization percentage
+            latency_ms:
+              type: number
+              minimum: 0
+              description: Average latency in milliseconds
+            packet_loss_rate:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Packet loss rate (0-1)
+        error_count:
+          type: integer
+          minimum: 0
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkError'
+        health_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall network health score
+
+    NetworkStatusEnum:
+      type: string
+      enum:
+        - offline
+        - initializing
+        - online
+        - degraded
+        - maintenance
+        - error
+
+    NetworkError:
+      type: object
+      required:
+        - code
+        - message
+        - severity
+        - timestamp
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, error, critical]
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          additionalProperties: true
+
+    LogsResponse:
+      type: object
+      required:
+        - logs
+        - total_count
+      properties:
+        logs:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              severity:
+                type: string
+                enum: [debug, info, warning, error, critical]
+              source:
+                type: string
+              message:
+                type: string
+              metadata:
+                type: object
+                additionalProperties: true
+        total_count:
+          type: integer
+        has_more:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          additionalProperties: true
+        request_id:
+          type: string
+          format: uuid
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Optional API key for sandbox access
+
+security:
+  - {}
+  - ApiKeyAuth: []
