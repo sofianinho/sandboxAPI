@@ -1,0 +1,1096 @@
+openapi: 3.0.3
+info:
+  title: Network Intelligence Sandbox API
+  description: |
+    API for the Predictive Network Intelligence & Self-Healing Platform Challenge.
+    
+    This sandbox simulates a comprehensive telco network environment with predictive analytics capabilities.
+    The API provides access to real-time telemetry data, prediction services, automated healing actions,
+    and historical network performance data.
+    
+    **Key Features:**
+    - Real-time network telemetry streaming
+    - Multi-horizon failure prediction (seconds to weeks)
+    - Autonomous healing action orchestration
+    - Historical data analysis and pattern recognition
+    - Business impact assessment and SLA monitoring
+    
+    **Network Components:**
+    - RAN (Radio Access Network): 5G base stations and small cells
+    - Core Network: User plane functions, control plane, authentication
+    - Edge Computing: Distributed processing nodes
+    - Transport: Fiber links, routers, switches
+    - Customer Devices: Mobile handsets, IoT devices, enterprise equipment
+  version: 1.0.0
+  contact:
+    name: LabLabee Engineering Team
+    email: engineering@lablabee.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/
+
+servers:
+  - url: https://sandbox.5gnetwork.test/api/v1
+    description: Remote sandbox environment
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ========================================
+  # NETWORK STATUS & TELEMETRY
+  # ========================================
+  
+  /network/status:
+    get:
+      summary: Get overall network health status
+      description: Returns high-level network health indicators and system status
+      tags:
+        - Network Status
+      responses:
+        '200':
+          description: Network status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkStatus'
+
+  /network/regions:
+    get:
+      summary: List all network regions
+      description: Get list of geographical regions with their current status
+      tags:
+        - Network Status
+      responses:
+        '200':
+          description: Regions list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  regions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NetworkRegion'
+
+  /network/regions/{regionId}/telemetry:
+    get:
+      summary: Get real-time telemetry for a region
+      description: Retrieve current performance metrics for a specific network region
+      tags:
+        - Telemetry
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "region-northwest-01"
+        - name: metrics
+          in: query
+          description: Comma-separated list of specific metrics to retrieve
+          schema:
+            type: string
+          example: "throughput,latency,packet_loss,cpu_utilization"
+        - name: granularity
+          in: query
+          description: Time granularity for data points
+          schema:
+            type: string
+            enum: [realtime, 1min, 5min, 15min, 1hour]
+            default: realtime
+      responses:
+        '200':
+          description: Telemetry data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryData'
+
+  /network/components/{componentId}/status:
+    get:
+      summary: Get detailed status of a network component
+      description: Retrieve comprehensive status information for a specific network component
+      tags:
+        - Network Status
+      parameters:
+        - name: componentId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "base-station-downtown-001"
+      responses:
+        '200':
+          description: Component status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentStatus'
+
+  # ========================================
+  # PREDICTIVE ANALYTICS
+  # ========================================
+
+  /predictions/health-forecast:
+    post:
+      summary: Generate network health forecast
+      description: Create predictive health assessment for specified time horizon and network scope
+      tags:
+        - Predictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthForecastRequest'
+      responses:
+        '200':
+          description: Health forecast generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthForecast'
+        '202':
+          description: Forecast generation in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobStatus'
+
+  /predictions/anomalies:
+    get:
+      summary: Get current anomaly detections
+      description: Retrieve list of detected anomalies with severity and confidence scores
+      tags:
+        - Predictions
+      parameters:
+        - name: severity
+          in: query
+          description: Filter by minimum severity level
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: confidence
+          in: query
+          description: Filter by minimum confidence threshold (0-1)
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+        - name: region
+          in: query
+          description: Filter by specific region
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anomalies retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyList'
+
+  /predictions/failure-risk:
+    post:
+      summary: Assess failure risk for network components
+      description: Calculate failure probability and impact assessment for specified components
+      tags:
+        - Predictions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailureRiskRequest'
+      responses:
+        '200':
+          description: Failure risk assessment completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailureRiskAssessment'
+
+  # ========================================
+  # HEALING ACTIONS & ORCHESTRATION
+  # ========================================
+
+  /healing/actions:
+    get:
+      summary: List available healing actions
+      description: Get catalog of all available automated healing actions
+      tags:
+        - Healing
+      responses:
+        '200':
+          description: Healing actions catalog retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealingActionsCatalog'
+
+    post:
+      summary: Execute healing action
+      description: Trigger automated healing action for detected issues
+      tags:
+        - Healing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealingActionRequest'
+      responses:
+        '202':
+          description: Healing action initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealingActionResponse'
+
+  /healing/workflows:
+    get:
+      summary: List active healing workflows
+      description: Get status of currently running healing workflows
+      tags:
+        - Healing
+      responses:
+        '200':
+          description: Active workflows retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowsList'
+
+  /healing/workflows/{workflowId}:
+    get:
+      summary: Get healing workflow details
+      description: Retrieve detailed information about a specific healing workflow
+      tags:
+        - Healing
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workflow details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDetails'
+
+  /healing/rollback/{actionId}:
+    post:
+      summary: Rollback healing action
+      description: Reverse a previously executed healing action
+      tags:
+        - Healing
+      parameters:
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Rollback initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollbackResponse'
+
+  # ========================================
+  # HISTORICAL DATA & ANALYTICS
+  # ========================================
+
+  /analytics/historical:
+    get:
+      summary: Query historical network data
+      description: Retrieve historical performance data for analysis and training
+      tags:
+        - Analytics
+      parameters:
+        - name: start_time
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-01T00:00:00Z"
+        - name: end_time
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-31T23:59:59Z"
+        - name: metrics
+          in: query
+          description: Specific metrics to retrieve
+          schema:
+            type: string
+          example: "throughput,latency,error_rate"
+        - name: aggregation
+          in: query
+          description: Data aggregation level
+          schema:
+            type: string
+            enum: [raw, 1min, 5min, 15min, 1hour, 1day]
+            default: 1hour
+      responses:
+        '200':
+          description: Historical data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricalData'
+
+  /analytics/incidents:
+    get:
+      summary: Get historical incident data
+      description: Retrieve past network incidents for pattern analysis
+      tags:
+        - Analytics
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: category
+          in: query
+          schema:
+            type: string
+          example: "connectivity,performance,hardware"
+        - name: resolved
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Historical incidents retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentHistory'
+
+  # ========================================
+  # BUSINESS INTELLIGENCE
+  # ========================================
+
+  /business/impact-assessment:
+    post:
+      summary: Generate business impact assessment
+      description: Calculate revenue and customer impact for network issues
+      tags:
+        - Business Intelligence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpactAssessmentRequest'
+      responses:
+        '200':
+          description: Impact assessment completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessImpactAssessment'
+
+  /business/sla-status:
+    get:
+      summary: Get SLA compliance status
+      description: Retrieve current SLA performance metrics and compliance status
+      tags:
+        - Business Intelligence
+      parameters:
+        - name: customer_tier
+          in: query
+          schema:
+            type: string
+            enum: [enterprise, premium, standard]
+        - name: service_type
+          in: query
+          schema:
+            type: string
+          example: "5g,edge_compute,iot"
+      responses:
+        '200':
+          description: SLA status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SLAStatus'
+
+  # ========================================
+  # CONFIGURATION & MANAGEMENT
+  # ========================================
+
+  /config/thresholds:
+    get:
+      summary: Get alerting and prediction thresholds
+      description: Retrieve current threshold configuration for alerts and predictions
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: Threshold configuration retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdConfiguration'
+
+    put:
+      summary: Update alerting and prediction thresholds
+      description: Modify threshold settings for alerts and predictions
+      tags:
+        - Configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThresholdConfiguration'
+      responses:
+        '200':
+          description: Thresholds updated successfully
+
+  /system/jobs/{jobId}:
+    get:
+      summary: Get async job status
+      description: Check status of long-running background jobs
+      tags:
+        - System
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobStatus'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NetworkStatus:
+      type: object
+      properties:
+        overall_health:
+          type: string
+          enum: [excellent, good, degraded, critical]
+        uptime_percentage:
+          type: number
+          format: float
+          example: 99.97
+        active_regions:
+          type: integer
+          example: 12
+        total_base_stations:
+          type: integer
+          example: 1547
+        connected_devices:
+          type: integer
+          example: 2847291
+        current_throughput_gbps:
+          type: number
+          format: float
+          example: 847.3
+        prediction_confidence:
+          type: number
+          format: float
+          description: Overall confidence in current predictions (0-1)
+          example: 0.87
+        last_updated:
+          type: string
+          format: date-time
+
+    NetworkRegion:
+      type: object
+      properties:
+        region_id:
+          type: string
+          example: "region-northwest-01"
+        name:
+          type: string
+          example: "Pacific Northwest"
+        status:
+          type: string
+          enum: [operational, degraded, maintenance, offline]
+        base_stations:
+          type: integer
+          example: 127
+        connected_devices:
+          type: integer
+          example: 234891
+        current_load:
+          type: number
+          format: float
+          description: Current capacity utilization (0-1)
+          example: 0.67
+
+    TelemetryData:
+      type: object
+      properties:
+        region_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          properties:
+            throughput_mbps:
+              type: number
+              format: float
+            latency_ms:
+              type: number
+              format: float
+            packet_loss_percent:
+              type: number
+              format: float
+            error_rate:
+              type: number
+              format: float
+            cpu_utilization:
+              type: number
+              format: float
+            memory_utilization:
+              type: number
+              format: float
+            active_sessions:
+              type: integer
+            signal_strength_dbm:
+              type: number
+              format: float
+
+    ComponentStatus:
+      type: object
+      properties:
+        component_id:
+          type: string
+        component_type:
+          type: string
+          enum: [base_station, core_node, edge_compute, router, switch]
+        status:
+          type: string
+          enum: [operational, warning, critical, offline, maintenance]
+        health_score:
+          type: number
+          format: float
+          description: Overall health score (0-100)
+        last_maintenance:
+          type: string
+          format: date-time
+        predicted_failure_probability:
+          type: number
+          format: float
+          description: 30-day failure probability (0-1)
+        performance_metrics:
+          type: object
+          additionalProperties: true
+
+    HealthForecastRequest:
+      type: object
+      required:
+        - time_horizon
+        - scope
+      properties:
+        time_horizon:
+          type: string
+          enum: [1hour, 6hours, 24hours, 3days, 1week, 1month]
+        scope:
+          type: object
+          properties:
+            regions:
+              type: array
+              items:
+                type: string
+            component_types:
+              type: array
+              items:
+                type: string
+        confidence_threshold:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          default: 0.8
+
+    HealthForecast:
+      type: object
+      properties:
+        forecast_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        time_horizon:
+          type: string
+        overall_risk_score:
+          type: number
+          format: float
+          description: Overall network risk score (0-100)
+        predicted_incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/PredictedIncident'
+        capacity_forecast:
+          type: object
+          properties:
+            peak_utilization:
+              type: number
+              format: float
+            bottleneck_regions:
+              type: array
+              items:
+                type: string
+        confidence:
+          type: number
+          format: float
+
+    PredictedIncident:
+      type: object
+      properties:
+        incident_id:
+          type: string
+        predicted_time:
+          type: string
+          format: date-time
+        probability:
+          type: number
+          format: float
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        affected_components:
+          type: array
+          items:
+            type: string
+        root_cause_hypothesis:
+          type: string
+        estimated_impact:
+          $ref: '#/components/schemas/ImpactEstimate'
+        recommended_actions:
+          type: array
+          items:
+            type: string
+
+    ImpactEstimate:
+      type: object
+      properties:
+        customers_affected:
+          type: integer
+        revenue_at_risk:
+          type: number
+          format: float
+        service_degradation_minutes:
+          type: number
+          format: float
+        sla_violations:
+          type: array
+          items:
+            type: string
+
+    AnomalyList:
+      type: object
+      properties:
+        anomalies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Anomaly'
+        total_count:
+          type: integer
+        high_priority_count:
+          type: integer
+
+    Anomaly:
+      type: object
+      properties:
+        anomaly_id:
+          type: string
+        detected_at:
+          type: string
+          format: date-time
+        component_id:
+          type: string
+        anomaly_type:
+          type: string
+          enum: [performance, capacity, connectivity, hardware, pattern]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        confidence:
+          type: number
+          format: float
+        description:
+          type: string
+        affected_metrics:
+          type: array
+          items:
+            type: string
+        correlation_score:
+          type: number
+          format: float
+
+    HealingActionRequest:
+      type: object
+      required:
+        - action_type
+        - target_components
+      properties:
+        action_type:
+          type: string
+          enum: [load_balance, scale_resources, restart_service, reroute_traffic, update_config, emergency_maintenance]
+        target_components:
+          type: array
+          items:
+            type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        approval_level:
+          type: string
+          enum: [automatic, supervised, manual_approval]
+          default: supervised
+        rollback_policy:
+          type: string
+          enum: [automatic, manual, time_based]
+          default: time_based
+
+    HealingActionResponse:
+      type: object
+      properties:
+        action_id:
+          type: string
+        workflow_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, requires_approval]
+        estimated_completion:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowStep'
+
+    WorkflowStep:
+      type: object
+      properties:
+        step_id:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed, skipped]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        output:
+          type: object
+          additionalProperties: true
+
+    BusinessImpactAssessment:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        scenario:
+          type: string
+        total_revenue_impact:
+          type: number
+          format: float
+        customers_affected:
+          type: integer
+        service_credits_exposure:
+          type: number
+          format: float
+        reputation_risk_score:
+          type: number
+          format: float
+        recovery_time_estimate:
+          type: string
+        mitigation_costs:
+          type: number
+          format: float
+
+    HistoricalData:
+      type: object
+      properties:
+        query_id:
+          type: string
+        time_range:
+          type: object
+          properties:
+            start_time:
+              type: string
+              format: date-time
+            end_time:
+              type: string
+              format: date-time
+        data_points:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              metrics:
+                type: object
+                additionalProperties: true
+
+    AsyncJobStatus:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, cancelled]
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        result:
+          type: object
+          additionalProperties: true
+        error:
+          type: string
+
+    # Additional schemas for completeness...
+    FailureRiskRequest:
+      type: object
+      required:
+        - components
+      properties:
+        components:
+          type: array
+          items:
+            type: string
+        time_horizon:
+          type: string
+          enum: [1hour, 24hours, 1week, 1month]
+          default: 24hours
+
+    FailureRiskAssessment:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              component_id:
+                type: string
+              failure_probability:
+                type: number
+                format: float
+              risk_factors:
+                type: array
+                items:
+                  type: string
+              recommended_actions:
+                type: array
+                items:
+                  type: string
+
+    ThresholdConfiguration:
+      type: object
+      properties:
+        performance_thresholds:
+          type: object
+          properties:
+            latency_warning_ms:
+              type: number
+            latency_critical_ms:
+              type: number
+            throughput_warning_percent:
+              type: number
+            packet_loss_warning_percent:
+              type: number
+        prediction_thresholds:
+          type: object
+          properties:
+            anomaly_confidence:
+              type: number
+              format: float
+            failure_probability:
+              type: number
+              format: float
+
+    HealingActionsCatalog:
+      type: object
+      properties:
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              action_type:
+                type: string
+              description:
+                type: string
+              required_parameters:
+                type: array
+                items:
+                  type: string
+              risk_level:
+                type: string
+                enum: [low, medium, high]
+              estimated_duration:
+                type: string
+
+    WorkflowsList:
+      type: object
+      properties:
+        workflows:
+          type: array
+          items:
+            type: object
+            properties:
+              workflow_id:
+                type: string
+              status:
+                type: string
+              started_at:
+                type: string
+                format: date-time
+              estimated_completion:
+                type: string
+                format: date-time
+
+    WorkflowDetails:
+      type: object
+      properties:
+        workflow_id:
+          type: string
+        status:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowStep'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    RollbackResponse:
+      type: object
+      properties:
+        rollback_id:
+          type: string
+        original_action_id:
+          type: string
+        status:
+          type: string
+        estimated_completion:
+          type: string
+          format: date-time
+
+    SLAStatus:
+      type: object
+      properties:
+        overall_compliance:
+          type: number
+          format: float
+        service_levels:
+          type: array
+          items:
+            type: object
+            properties:
+              service_name:
+                type: string
+              target_availability:
+                type: number
+                format: float
+              actual_availability:
+                type: number
+                format: float
+              compliance_status:
+                type: string
+                enum: [compliant, at_risk, violated]
+
+    IncidentHistory:
+      type: object
+      properties:
+        incidents:
+          type: array
+          items:
+            type: object
+            properties:
+              incident_id:
+                type: string
+              occurred_at:
+                type: string
+                format: date-time
+              resolved_at:
+                type: string
+                format: date-time
+              severity:
+                type: string
+              category:
+                type: string
+              root_cause:
+                type: string
+              resolution_actions:
+                type: array
+                items:
+                  type: string
+
+    ImpactAssessmentRequest:
+      type: object
+      required:
+        - scenario
+      properties:
+        scenario:
+          type: object
+          properties:
+            affected_regions:
+              type: array
+              items:
+                type: string
+            service_degradation:
+              type: number
+              format: float
+            duration_hours:
+              type: number
+              format: float
+        customer_segments:
+          type: array
+          items:
+            type: string
+            enum: [enterprise, premium, standard, all]
