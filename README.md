@@ -4,4 +4,4 @@ Use the file [`api.yaml`](./api.yaml) to see the open API specification. To disp
 
 # Network Intelligence Sandbox API Sandbox API specification
 
-Use the file [`NetworkIntelligenceSandoxAPI.yaml`](./NetworkIntelligenceSandoxAPI.yaml) to see the open API specification. To display the contents of the file, use any swagger editor. Example: [https://editor.swagger.io/](https://editor.swagger.io/)
+Use the file [`NetworkIntelligenceSandboxAPI.yaml`](./NetworkIntelligenceSandboxAPI.yaml) to see the open API specification. To display the contents of the file, use any swagger editor. Example: [https://editor.swagger.io/](https://editor.swagger.io/)
