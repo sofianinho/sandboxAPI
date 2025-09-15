@@ -3,7 +3,7 @@
 ## Network Intelligence Sandbox API Sandbox API specification
 
 - Use the file [`NetworkIntelligenceSandboxAPI.yaml`](./NetworkIntelligenceSandboxAPI.yaml) to see the open API specification. To display the contents of the file, use any swagger editor. Example: [https://editor.swagger.io/](https://editor.swagger.io/)
-- Use the docker compose file to start a mock server of the sandbox implementing the API
+- Use the docker compose file to start a mock server of the sandbox implementing the API or use the public image at `sofianinho/sandboxapi-network-intelligence-api:latest`
 
 ## Intelligent Network Operations Agent Sandbox API specification
 
